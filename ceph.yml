@@ -1,0 +1,22 @@
+---
+- name: Collecting facts
+  hosts: all
+  gather_facts: yes
+
+- hosts: ceph_osd:ceph_mon
+  name: get facts
+  tasks:
+#    - action: ceph_facts
+    - action: get_partitions.py
+
+- hosts: ceph_mon
+  tasks:
+    - include: ceph/tasks/mon_0.yml
+
+- hosts: ceph_mon
+  tasks:
+    - include: ceph/tasks/mon.yml
+
+- hosts: ceph_osd
+  tasks:
+    - include: ceph/tasks/osd.yml

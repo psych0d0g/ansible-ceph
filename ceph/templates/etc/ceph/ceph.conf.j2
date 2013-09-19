@@ -1,0 +1,5 @@
+[global]
+    fsid = {{ hostvars[groups.ceph_mon[0]]['monmap']['stdout_lines'][0] }}
+    osd_journal_size = 1024
+	mon_host = {% for host in groups['ceph_mon']|sort %}{{ hostvars[host]['ansible_eth2']['ipv4']['address'] }} {% endfor %}
+

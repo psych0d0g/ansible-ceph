@@ -1,0 +1,69 @@
+---
+# To do only on the *first* mon client
+- name: Create key for client.admin on the first mon node
+  shell: ceph-authtool --create-keyring --gen-key -n client.admin --set-uid=0 --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow *' /etc/ceph/ceph.keyring 
+      creates=/etc/ceph/ceph.keyring
+  register: client_admin_key
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Create keyring on the first mon node
+  command: ceph-authtool --gen-key -n mon. /etc/ceph/ceph.keyring --cap mon 'allow *' 
+  register: mon_key
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Create monmap on the first mon node and store fsid in a dedicated file
+  shell: monmaptool --create --add {{ inventory_hostname_short }} {{ hostvars[inventory_hostname_short]['ansible_eth2']['ipv4']['address'] }}:6789 /etc/ceph/monmap | grep fsid | awk {'print $4'} >> /etc/ceph/fsid
+      creates=/etc/ceph/monmap
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Create ceph working directory
+  shell: mkdir /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}
+      creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Create local Ceph FileSystem
+  command: ceph-mon --keyring /etc/ceph/ceph.keyring -i {{ inventory_hostname_short }} --mkfs --monmap /etc/ceph/monmap 
+      creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/store.db/LOCK
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Touch something for the sake of touching it mwahaha
+  command: touch /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/sysvinit
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: read fsid from file into global ansible var
+  shell: cat /etc/ceph/fsid
+  register: monmap
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: configure ceph with fsid from monmap
+  template: src=ceph/templates/etc/ceph/ceph.conf.j2 dest=/etc/ceph/ceph.conf owner=root group=root mode=0644
+
+  
+- name: Create key for OSD bootstrap
+  shell: ceph-authtool --create-keyring --gen-key -n client.bootstrap-osd --cap mon 'allow profile bootstrap-osd' /etc/ceph/ceph.keyring.bootstrap-osd
+      creates=/etc/ceph/ceph.keyring.bootstrap-osd
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Download the key from mon_0
+  fetch: src=/etc/ceph/ceph.keyring dest=/tmp/fetched.ceph.keyring flat=yes fail_on_missing=yes
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Download the OSD Bootstrap key from mon_0
+  fetch: src=/etc/ceph/ceph.keyring.bootstrap-osd dest=/tmp/fetched.ceph.keyring.bootstrap-osd flat=yes fail_on_missing=yes
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Download the monmap from mon_0
+  fetch: src=/etc/ceph/monmap dest=/tmp/fetched.monmap flat=yes fail_on_missing=yes
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Ensure ceph-mon is running
+  service: name=ceph state=started pattern=/usr/bin/ceph-mon enabled=yes
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: feed our OSD bootstrap key to the cluster
+  shell: ceph auth add client.bootstrap-osd -i /etc/ceph/ceph.keyring.bootstrap-osd
+  when: inventory_hostname == groups.ceph_mon[0]
+
+- name: Create key for OSD bootstrap
+  shell: ceph auth add client.bootstrap-osd -i /etc/ceph/ceph.keyring.bootstrap-osd
+  when: inventory_hostname == groups.ceph_mon[0]

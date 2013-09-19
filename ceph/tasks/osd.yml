@@ -1,0 +1,19 @@
+---
+- name: configure ceph with fsid from monmap
+  template: src=ceph/templates/etc/ceph/ceph.conf.j2 dest=/etc/ceph/ceph.conf owner=root group=root mode=644 backup=yes
+
+- name: Upload the OSD Bootstrap key from mon_0
+  copy: src=/tmp/fetched.ceph.keyring.bootstrap-osd dest=/var/lib/ceph/bootstrap-osd/ceph.keyring 
+
+- name: Check if partition is ceph-active
+  #only_if: '"${ceph-devs.{$devs}.state}" != "active"'
+  command: ceph-disk prepare --zap-disk /dev/{{ item }}
+  with_items: ceph_devs
+
+- name: Check if partition is ceph-active
+  #only_if: '"${ceph-devs.{$devs}.state}" != "active"'
+  shell: ceph-disk activate-all &
+  #shell umount {{ devs }}; umount {{ osd_disk }}; ceph-disk prepare --zap-disk {{ osd_disk }}
+
+- name: Ensure ceph-osd is running
+  action: service name=ceph state=started
