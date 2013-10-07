@@ -4,20 +4,18 @@
   shell: creates=/etc/ceph/ceph.keyring ceph-authtool --create-keyring --gen-key -n client.admin --set-uid=0 --cap mon 'allow *' --cap osd 'allow *' --cap mds 'allow *' /etc/ceph/ceph.keyring; ceph-authtool --gen-key -n mon. /etc/ceph/ceph.keyring --cap mon 'allow *'
   register: client_admin_key
 
-# Tell him the fsid maybe?
 - name: Create monmap on the first mon node and store fsid in a dedicated file
   shell: creates=/etc/ceph/monmap monmaptool --create --add {{ inventory_hostname_short }} {{ hostvars[inventory_hostname_short]['ansible_eth2']['ipv4']['address'] }}:6789 /etc/ceph/monmap | grep fsid | awk {'print $4'} >> /etc/ceph/fsid
   register: monmap1
 
-# Maybe change to file -> directory!
 - name: Create ceph working directory
-  shell: mkdir /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }} creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}
+  file: path=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }} state=directory
 
 - name: Create local Ceph FileSystem
   command: ceph-mon --keyring /etc/ceph/ceph.keyring -i {{ inventory_hostname_short }} --mkfs --monmap /etc/ceph/monmap 
       creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/store.db/LOCK
 
-# Maybe change to file -> file :D
+# Not using file here because it will always touch, my version will only touch when file not there
 - name: Touch something for the sake of touching it mwahaha
   shell: creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/sysvinit touch /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/sysvinit
 

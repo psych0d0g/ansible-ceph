@@ -10,7 +10,7 @@
   when: monmap1.changed
 
 - name: Create ceph working directory
-  shell: creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }} mkdir /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}
+  file: path=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }} state=directory
 
 - name: copy keyring in /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}
   shell: creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/keyring cp -a /etc/ceph/ceph.keyring /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/keyring 
