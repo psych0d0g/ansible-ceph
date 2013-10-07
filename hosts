@@ -1,12 +1,23 @@
 # Inventory file for ansible
 [ceph_mon]
 cs-compute03
+
+
+
 #ceph-moni01
 #ceph-moni02
 #ceph-moni03
+
+
+
 [ceph_osd]
+cs-bigfoot01
+cs-bigfoot05
 cs-bigfoot07
 cs-bigfoot08
+
+
+
 #ceph-osd01
 #ceph-osd02
 #ceph-osd03

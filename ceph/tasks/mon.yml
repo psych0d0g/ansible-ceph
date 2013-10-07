@@ -1,37 +1,25 @@
 ---
 - name: Copying keyring from mon.0
   copy: src=/tmp/fetched.ceph.keyring dest=/etc/ceph/ceph.keyring owner=root group=root mode=644 backup=yes
-  when: inventory_hostname != groups.ceph_mon[0]
 
 - name: Copying monmap from mon.0
   copy: src=/tmp/fetched.monmap dest=/etc/ceph/monmap owner=root group=root mode=644 backup=yes
-  when: inventory_hostname != groups.ceph_mon[0]
+
+- name: configure ceph with fsid from monmap
+  template: src=ceph/templates/etc/ceph/ceph.conf.j2 dest=/etc/ceph/ceph.conf owner=root group=root mode=0644
+  when: monmap1.changed
 
 - name: Create ceph working directory
-  shell: mkdir /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}
-      creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}
-  when: inventory_hostname != groups.ceph_mon[0]
+  shell: creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }} mkdir /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}
 
 - name: copy keyring in /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}
-  shell: cp -a /etc/ceph/ceph.keyring /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/keyring 
-          creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/keyring
-  when: inventory_hostname != groups.ceph_mon[0]
+  shell: creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/keyring cp -a /etc/ceph/ceph.keyring /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/keyring 
 
 - name: Create mon fs
-  action: shell ceph-mon --keyring /etc/ceph/ceph.keyring -i {{ inventory_hostname_short }} --mkfs --monmap /etc/ceph/monmap
-          creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/store.db/CURRENT
-  when: inventory_hostname != groups.ceph_mon[0]
+  shell: creates=/var/run/ceph/mon.{{ inventory_hostname_short }}.pid ceph-mon --keyring /etc/ceph/ceph.keyring -i {{ inventory_hostname_short }} --mkfs --monmap /etc/ceph/monmap
 
 - name: Touch something for the sake of touching it mwahaha
-  shell: touch /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/sysvinit
-      creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/sysvinit
-  when: inventory_hostname != groups.ceph_mon[0]
-
-- name: Create mon fs
-  action: shell ceph-mon -i {{ inventory_hostname_short }} --public-addr {{ ansible_eth2["ipv4"]["address"] }}:6789
-          creates=/var/run/ceph/mon.{{ inventory_hostname_short }}.pid
-  when: inventory_hostname != groups.ceph_mon[0]
+  shell: creates=/var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/sysvinit touch /var/lib/ceph/mon/ceph-{{ inventory_hostname_short }}/sysvinit
 
 - name: Ensure ceph-mon is running
   service: name=ceph state=started pattern=ceph-mon enabled=yes
-  when: inventory_hostname != groups.ceph_mon[0]
