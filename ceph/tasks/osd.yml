@@ -18,4 +18,3 @@
 
 - name: Ensure ceph-osd is running
   action: service name=ceph state=started
-- hosts: ceph_osd

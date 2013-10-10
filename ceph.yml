@@ -1,6 +1,6 @@
 ---
-- name: Collecting facts
-  hosts: all
+- hosts: all
+  name: Collecting facts
   gather_facts: yes
 
 - hosts: ceph_osd

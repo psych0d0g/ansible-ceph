@@ -21,7 +21,7 @@ def get_facts_from_config():
         line = line.strip(' ')
         linelist = line.split()
         linelist = linelist[2:4]
-        if int(linelist[0]) > 2500000000:
+        if int(linelist[0]) > 3000000000:
             if re.match ('^[a-z]{3,4}$', linelist[1]):
                 cephlist.append(linelist[1])
 
@@ -31,6 +31,7 @@ def get_facts_from_config():
 	            for device in cephlist:
 	                if device in line:
 	                    devices.append(line)
+
 	return facts
 
 def main():

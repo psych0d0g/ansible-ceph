@@ -21,7 +21,7 @@
 
 # Screw this and put it directly to the generation task - maybe?
 - name: read fsid from file into global ansible var
-  local_command: cat /etc/ceph/fsid
+  shell: cat /etc/ceph/fsid
   register: monmap
 
 - name: configure ceph with fsid from monmap
